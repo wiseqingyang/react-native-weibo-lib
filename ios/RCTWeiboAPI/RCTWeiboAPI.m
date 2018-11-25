@@ -9,25 +9,14 @@
 #import "RCTWeiboAPI.h"
 #import "WeiboSDK.h"
 
-#if __has_include(<React/RCTBridge.h>)
-#import <React/RCTBridge.h>
-#import <React/RCTEventDispatcher.h>
 #import <React/RCTImageLoader.h>
-#else
-#import "RCTBridge.h"
-#import "RCTEventDispatcher.h"
-#import "RCTImageLoader.h"
-#endif
 
 #define INVOKE_FAILED (@"WeiBo API invoke returns false.")
 #define RCTWBEventName (@"Weibo_Resp")
 
-
-#define RCTWBShareTypeNews @"news"
 #define RCTWBShareTypeImage @"image"
 #define RCTWBShareTypeText @"text"
 #define RCTWBShareTypeVideo @"video"
-#define RCTWBShareTypeAudio @"audio"
 
 #define RCTWBShareType @"type"
 #define RCTWBShareText @"text"
@@ -45,7 +34,35 @@ BOOL gRegister = NO;
 
 @implementation RCTWeiboAPI
 
+{
+  bool hasListeners;
+}
+
+
 @synthesize bridge = _bridge;
+
++(BOOL)requiresMainQueueSetup {
+    return YES;
+}
+
+// Will be called when this module's first listener is added.
+-(void)startObserving {
+    hasListeners = YES;
+    // Set up any upstream listeners or background tasks as necessary
+}
+
+
+// Will be called when this module's last listener is removed, or on dealloc.
+-(void)stopObserving {
+    hasListeners = NO;
+    // Remove upstream listeners, stop unnecessary background tasks
+}
+
+
+- (NSArray<NSString *> *)supportedEvents
+{
+  return @[RCTWBEventName];
+}
 
 RCT_EXPORT_MODULE();
 
@@ -164,7 +181,10 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
             body[@"errMsg"] = [self _getErrMsg:response.statusCode];
         }
     }
-    [self.bridge.eventDispatcher sendAppEventWithName:RCTWBEventName body:body];
+
+    if (hasListeners) {
+        [self sendEventWithName:RCTWBEventName body:body];
+    }
 }
 
 #pragma mark - private
@@ -247,14 +267,10 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
     }
     else {
         if ([type isEqualToString:RCTWBShareTypeVideo]) {
-            WBVideoObject *videoObject = [WBVideoObject new];
-            videoObject.videoUrl = aData[RCTWBShareWebpageUrl];
-            message.mediaObject = videoObject;
-        }
-        else if ([type isEqualToString:RCTWBShareTypeAudio]) {
-            WBMusicObject *musicObject = [WBMusicObject new];
-            musicObject.musicUrl = aData[RCTWBShareWebpageUrl];
-            message.mediaObject = musicObject;
+            WBNewVideoObject *videoObject = [WBNewVideoObject new];
+            NSURL *videoUrl = aData[RCTWBShareWebpageUrl];
+            [videoObject addVideo:videoUrl];
+            message.videoObject = videoObject;
         }
         else {
             WBWebpageObject *webpageObject = [WBWebpageObject new];
@@ -280,7 +296,10 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
         body[@"errMsg"] = INVOKE_FAILED;
         body[@"errCode"] = @(-1);
         body[@"type"] = @"WBSendMessageToWeiboResponse";
-        [_bridge.eventDispatcher sendAppEventWithName:RCTWBEventName body:body];
+
+        if (hasListeners) {
+            [self sendEventWithName:RCTWBEventName body:body];
+        }
     }
 }
 
@@ -288,11 +307,13 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
 {
     NSString *redirectURI = config[@"redirectURI"];
     NSString *scope = config[@"scope"];
+
+
     
     WBAuthorizeRequest *authRequest = [WBAuthorizeRequest request];
     authRequest.redirectURI = redirectURI;
     authRequest.scope = scope;
-    
+
     return authRequest;
 }
 
