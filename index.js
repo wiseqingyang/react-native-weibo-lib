@@ -2,7 +2,7 @@
  * Created by lvbingru on 1/5/16.
  */
 
-import {NativeModules, NativeAppEventEmitter} from 'react-native';
+import {NativeModules, NativeEventEmitter} from 'react-native';
 import promisify from 'es6-promisify';
 
 const {WeiboAPI} = NativeModules;
@@ -55,6 +55,8 @@ function waitForResponse(type) {
         };
     });
 }
+
+const NativeAppEventEmitter = new NativeEventEmitter(WeiboAPI);
 
 NativeAppEventEmitter.addListener('Weibo_Resp', resp => {
     const callback = savedCallback;

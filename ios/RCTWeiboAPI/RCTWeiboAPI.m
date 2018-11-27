@@ -307,8 +307,6 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
 {
     NSString *redirectURI = config[@"redirectURI"];
     NSString *scope = config[@"scope"];
-
-
     
     WBAuthorizeRequest *authRequest = [WBAuthorizeRequest request];
     authRequest.redirectURI = redirectURI;
