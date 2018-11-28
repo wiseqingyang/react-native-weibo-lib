@@ -39,7 +39,6 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.modules.core.RCTNativeAppEventEmitter;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 import com.sina.weibo.sdk.api.ImageObject;
 import com.sina.weibo.sdk.api.TextObject;
@@ -225,7 +224,7 @@ public class WeiboModule extends ReactContextBaseJavaModule implements ActivityE
                     event.putString("errMsg", "token invalid");
                 }
                 event.putString("type", "WBAuthorizeResponse");
-                getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTNativeAppEventEmitter.class).emit(RCTWBEventName, event);
+                getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(RCTWBEventName, event);
 
                 // WBAuthActivity.this.runOnUiThread(new Runnable() {
                 //     @Override
@@ -252,7 +251,7 @@ public class WeiboModule extends ReactContextBaseJavaModule implements ActivityE
                 event.putString("type", "WBAuthorizeResponse");
                 event.putString("errMsg", e.getErrorMessage());
                 event.putInt("errCode", -1);
-                getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTNativeAppEventEmitter.class).emit(RCTWBEventName, event);
+                getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(RCTWBEventName, event);
             }
 
             @Override
@@ -261,7 +260,7 @@ public class WeiboModule extends ReactContextBaseJavaModule implements ActivityE
                 event.putString("type", "WBAuthorizeResponse");
                 event.putString("errMsg", "Cancel");
                 event.putInt("errCode", -1);
-                getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTNativeAppEventEmitter.class).emit(RCTWBEventName, event);
+                getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(RCTWBEventName, event);
             }
         };
     }
