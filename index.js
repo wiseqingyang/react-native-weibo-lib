@@ -2,8 +2,7 @@
  * Created by lvbingru on 1/5/16.
  */
 
-import {NativeModules, NativeEventEmitter} from 'react-native';
-import promisify from 'es6-promisify';
+import {NativeModules, Platform, NativeEventEmitter, DeviceEventEmitter} from 'react-native';
 
 const {WeiboAPI} = NativeModules;
 
@@ -27,9 +26,16 @@ function wrapApi(nativeFunc) {
     if (!nativeFunc) {
         return undefined;
     }
-    const promisified = promisify(nativeFunc, translateError);
+
     return (...args) => {
-        return promisified(...args);
+        return new Promise((resolve, reject) => {
+            nativeFunc.apply(this, [...args, (...result) => {
+                translateError.apply({
+                    resolve,
+                    reject
+                }, result);
+            }]);
+        });
     };
 }
 
@@ -56,14 +62,19 @@ function waitForResponse(type) {
     });
 }
 
-const NativeAppEventEmitter = new NativeEventEmitter(WeiboAPI);
 
-NativeAppEventEmitter.addListener('Weibo_Resp', resp => {
+let Emiter;
+if (Platform.OS === 'ios') {
+    Emiter = new NativeEventEmitter(WeiboAPI);
+} else {
+    Emiter = DeviceEventEmitter;
+}
+
+Emiter.addListener('Weibo_Resp', resp => {
     const callback = savedCallback;
     savedCallback = undefined;
     callback && callback(resp);
 });
-
 
 const defaultScope = "all"
 const defaultRedirectURI = "https://api.weibo.com/oauth2/default.html"
@@ -89,4 +100,3 @@ export function share(data) {
     checkData(data)
     return Promise.all([waitForResponse('WBSendMessageToWeiboResponse'), nativeSendMessageRequest(data)]).then(v=>v[0]);
 }
-
