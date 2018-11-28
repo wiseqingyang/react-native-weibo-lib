@@ -1,6 +1,11 @@
 # react-native-weibo
+React Native的新浪微博登录插件
 
-React Native的新浪微博登录插件, react-native版本需要0.17.0及以上
+## 版本要求
+
++ 适配react-native版本0.57.5
++ weiboSDK的版本分别为ios 3.2.3和安卓端4.3.1
+
 ## 如何安装
 
 ### 1.首先安装npm包
