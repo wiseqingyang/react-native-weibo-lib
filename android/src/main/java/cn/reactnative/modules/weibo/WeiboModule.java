@@ -81,7 +81,7 @@ public class WeiboModule extends ReactContextBaseJavaModule implements ActivityE
 
     private SsoHandler mSsoHandler;
     private String appId;
-
+    private boolean wbSdkInstalled = false;
 
     private WbShareHandler shareHandler;
 
@@ -128,16 +128,23 @@ public class WeiboModule extends ReactContextBaseJavaModule implements ActivityE
         return shareHandler;
     }
 
+    private void _installWbSdk(final ReadableMap config) {
+        if (!wbSdkInstalled) {
+            AuthInfo sinaAuthInfo = this._genAuthInfo(config);
+            WbSdk.install(getCurrentActivity(), sinaAuthInfo);
+            wbSdkInstalled = true;
+        }
+    }
+
 
     @ReactMethod
     public void login(final ReadableMap config, final Callback callback){
 
-        AuthInfo sinaAuthInfo = this._genAuthInfo(config);
+        this._installWbSdk(config);
 
         if (mSsoHandler == null) {
-            WbSdk.install(getCurrentActivity(), sinaAuthInfo);
             mSsoHandler = new SsoHandler(getCurrentActivity());
-            mSsoHandler.authorizeClientSso(this.genWeiboAuthListener());
+            mSsoHandler.authorize(this.genWeiboAuthListener());
         }
 
         callback.invoke();
@@ -145,6 +152,8 @@ public class WeiboModule extends ReactContextBaseJavaModule implements ActivityE
 
     @ReactMethod
     public void shareToWeibo(final ReadableMap data, Callback callback){
+
+        this._installWbSdk(data);
 
         if (data.hasKey(RCTWBShareImageUrl)) {
             String imageUrl = data.getString(RCTWBShareImageUrl);
@@ -245,8 +254,6 @@ public class WeiboModule extends ReactContextBaseJavaModule implements ActivityE
 
             @Override
             public void onFailure(WbConnectErrorMessage e) {
-                Log.e("share","hasBitmap");
-
                 WritableMap event = Arguments.createMap();
                 event.putString("type", "WBAuthorizeResponse");
                 event.putString("errMsg", e.getErrorMessage());
@@ -320,44 +327,38 @@ public class WeiboModule extends ReactContextBaseJavaModule implements ActivityE
         }
 
         shareHandler.shareMessage(weiboMessage, false);
-
-        // String accessToken = null;
-        // if (data.hasKey(RCTWBShareAccessToken)) {
-        //     accessToken = data.getString(RCTWBShareAccessToken);
-        // }
-        // boolean success = mSinaShareAPI.sendRequest(getCurrentActivity(), request, null, accessToken, genWeiboAuthListener());
-
-        // if (success == false) {
-        //     WritableMap event = Arguments.createMap();
-        //     event.putString("type", "WBAuthorizeResponse");
-        //     event.putString("errMsg", "WeiBo API invoke returns false.");
-        //     event.putInt("errCode", -1);
-        //     getReactApplicationContext().getJSModule(RCTNativeAppEventEmitter.class).emit(RCTWBEventName, event);
-        // }
     }
 
 
     @Override
     public void onWbShareSuccess() {
-        Log.e("share","onWbShareSuccess");
+        WritableMap event = Arguments.createMap();
+        event.putString("type", "WBSendMessageToWeiboResponse");
+        event.putInt("errCode", 0);
+
+        getReactApplicationContext().getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit(RCTWBEventName, event);
     }
 
     @Override
     public void onWbShareFail() {
-        // WritableMap map = Arguments.createMap();
-        // map.putInt("errCode", baseResponse.errCode);
-        // map.putString("errMsg", baseResponse.errMsg);
-        // map.putString("type", "WBSendMessageToWeiboResponse");
-        // gModule.getReactApplicationContext()
-        //         .getJSModule(RCTNativeAppEventEmitter.class)
-        //         .emit(RCTWBEventName, map);
-
-        Log.e("share","onWbShareFail");
+        WritableMap map = Arguments.createMap();
+        map.putInt("errCode", -1);
+        map.putString("errMsg", "分享失败");
+        map.putString("type", "WBSendMessageToWeiboResponse");
+        getReactApplicationContext()
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit(RCTWBEventName, map);
     }
 
     @Override
     public void onWbShareCancel() {
-        Log.e("share","onWbShareCancel");
+        WritableMap map = Arguments.createMap();
+        map.putInt("errCode", -1);
+        map.putString("errMsg", "分享取消");
+        map.putString("type", "WBSendMessageToWeiboResponse");
+        getReactApplicationContext()
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit(RCTWBEventName, map);
     }
 
     private AuthInfo _genAuthInfo(ReadableMap config) {
