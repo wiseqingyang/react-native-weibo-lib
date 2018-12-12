@@ -1,5 +1,7 @@
 # react-native-weibo
-React Native的新浪微博登录插件
+React Native的新浪微博登录分享插件
+
+本仓库fork自https://github.com/reactnativecn/react-native-weibo，但源仓库许久没维护了，故本人针对react-native和weiboSDK新版做了适配后npm发布了新包`rn-weibo`。
 
 ## 版本要求
 
@@ -11,7 +13,7 @@ React Native的新浪微博登录插件
 ### 1.首先安装npm包
 
 ```bash
-npm install react-native-weibo --save
+npm install rn-weibo --save
 ```
 
 ### 2.link
