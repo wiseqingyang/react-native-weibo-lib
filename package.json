@@ -1,5 +1,5 @@
 {
-  "name": "rn-weibo",
+  "name": "@yuanshan/rn-weibo",
   "version": "3.0.5",
   "description": "新浪微博登录和分享模块",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yun77op/react-native-weibo.git"
+    "url": "git+https://github.com/yuanshan/react-native-weibo.git"
   },
   "keywords": [
     "react-native",
@@ -19,12 +19,12 @@
     "share",
     "login"
   ],
-  "author": "yun77op",
+  "author": "yuanshan",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/yun77op/react-native-weibo/issues"
+    "url": "https://github.com/yuanshan/react-native-weiboissues"
   },
-  "homepage": "https://github.com/yun77op/react-native-weibo#readme",
+  "homepage": "https://github.com/yuanshan/react-native-weibo#readme",
   "dependencies": {
   }
 }
