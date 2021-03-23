@@ -5,12 +5,10 @@
 //  Created by Wade Cheng on 4/3/13.
 //  Copyright (c) 2013 SINA iOS Team. All rights reserved.
 //
-
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
 #import "WBHttpRequest.h"
-
 
 typedef NS_ENUM(NSInteger, WeiboSDKResponseStatusCode)
 {
@@ -19,12 +17,22 @@ typedef NS_ENUM(NSInteger, WeiboSDKResponseStatusCode)
     WeiboSDKResponseStatusCodeSentFail              = -2,//发送失败
     WeiboSDKResponseStatusCodeAuthDeny              = -3,//授权失败
     WeiboSDKResponseStatusCodeUserCancelInstall     = -4,//用户取消安装微博客户端
-    WeiboSDKResponseStatusCodePayFail               = -5,//支付失败
     WeiboSDKResponseStatusCodeShareInSDKFailed      = -8,//分享失败 详情见response UserInfo
     WeiboSDKResponseStatusCodeUnsupport             = -99,//不支持的请求
     WeiboSDKResponseStatusCodeUnknown               = -100,
 };
 
+typedef NS_ENUM(NSInteger, WBULCheckStep)
+{
+    WBULCheckStepNone              = 0, //默认
+    WBULCheckStepParams            = 1, //参数检查
+    WBULCheckStepSystemVersion     = 2, //当前系统版本检查
+    WBULCheckStepWeiboVersion     = 3, //微博客户端版本检查
+    WBULCheckStepSDKInnerOperation = 4, //微博SDK内部操作检查
+    WBULCheckStepLaunchWeibo       = 5, //App拉起微博检查
+    WBULCheckStepBackToCurrentApp  = 6, //由微博返回当前App检查
+    WBULCheckStepFinal             = 7 //最终检查,也代表检测结果合法有效
+};
 
 @protocol WeiboSDKDelegate;
 @protocol WBHttpRequestDelegate;
@@ -66,8 +74,6 @@ typedef NS_ENUM(NSInteger, WeiboSDKResponseStatusCode)
  */
 + (BOOL)openWeiboApp;
 
-
-
 /**
  获取微博客户端程序的itunes安装地址
  @return 微博客户端程序的itunes安装地址
@@ -92,13 +98,19 @@ extern NSString * const WeiboSDKGetAidFailNotification;
  */
 + (NSString *)getWeiboAid;
 
-
 /**
  向微博客户端程序注册第三方应用
  @param appKey 微博开放平台第三方应用appKey
+ @param universalLink 开发者Universal Link
  @return 注册成功返回YES，失败返回NO
  */
-+ (BOOL)registerApp:(NSString *)appKey;
++ (BOOL)registerApp:(NSString * __nonnull)appKey universalLink:(NSString * __nonnull)universalLink;
+
+/**
+ step：检测的步骤
+ error：universalLink是否有效，error为nil universalLink有效，不为nil为无效universalLink
+ */
++ (void)checkUniversalLink:(void (^)(WBULCheckStep step, NSError *error))checkBlock;
 
 /**
  处理微博客户端程序通过URL启动第三方应用时传递的数据
@@ -110,6 +122,16 @@ extern NSString * const WeiboSDKGetAidFailNotification;
  */
 + (BOOL)handleOpenURL:(NSURL *)url delegate:(id<WeiboSDKDelegate>)delegate;
 
+
+/*! @brief 处理微博通过Universal Link启动App时传递的数据
+ *
+ * 需要在 application:continueUserActivity:restorationHandler:中调用。
+ * @param userActivity 微信启动第三方应用时系统API传递过来的userActivity
+ * @param delegate  WXApiDelegate对象，用来接收微博触发的消息。
+ * @return 成功返回YES，失败返回NO。
+ */
++ (BOOL)handleOpenUniversalLink:(NSUserActivity *)userActivity delegate:(nullable id<WeiboSDKDelegate>)delegate;
+
 /**
  发送请求给微博客户端程序，并切换到微博
  
@@ -119,8 +141,9 @@ extern NSString * const WeiboSDKGetAidFailNotification;
  
  @see [WeiboSDKDelegate didReceiveWeiboResponse:]
  @see WBBaseResponse
+ @param completion 调用结果回调block
  */
-+ (BOOL)sendRequest:(WBBaseRequest *)request;
++ (void)sendRequest:(WBBaseRequest *)request completion:(void (^ __nullable)(BOOL success))completion;
 
 /**
  收到微博客户端程序的请求后，发送对应的应答给微博客户端端程序，并切换到微博
@@ -129,8 +152,9 @@ extern NSString * const WeiboSDKGetAidFailNotification;
  
  @param response 具体的应答内容
  @see WBBaseRequest
+ @param completion 调用结果回调block
  */
-+ (BOOL)sendResponse:(WBBaseResponse *)response;
++ (void)sendResponse:(WBBaseResponse *)response  completion:(void (^ __nullable)(BOOL success))completion;
 
 /**
  设置WeiboSDK的调试模式
@@ -139,6 +163,11 @@ extern NSString * const WeiboSDKGetAidFailNotification;
  @param enabled 开启或关闭WeiboSDK的调试模式
  */
 + (void)enableDebugMode:(BOOL)enabled;
+
+/**
+ 设置WeiboSDK是否获取idfa 默认获取
+ */
++ (void)banGetIdfa:(BOOL)isBan;
 
 /**
  取消授权，登出接口
@@ -332,7 +361,6 @@ extern NSString * const WeiboSDKGetAidFailNotification;
  */
 @property (nonatomic, assign) BOOL shouldShowWebViewForAuthIfCannotSSO;
 
-
 @end
 
 
@@ -442,7 +470,36 @@ extern NSString * const WeiboSDKGetAidFailNotification;
 @property (nonatomic,strong) WBAuthorizeResponse *authResponse;
 @end
 
+#pragma mark - ShareMessageToContact Request/Response
+/**
+ 第三方应用分享链接到私信
+ */
+@interface WBShareMessageToContactRequest : WBBaseRequest
 
+/**
+ 分享链接的消息
+ */
+@property (nonatomic, strong) WBMessageObject *message;
+
+/**
+ 返回一个 WBShareMessageToContactRequest 对象
+ 此方法生成对象被[WeiboSDK sendRequest:]会唤起微博客户端的发布器进行分享
+ @param message 需要发送给微博客户端的消息对象
+ @return 返回一个*自动释放的*WBSendMessageToWeiboRequest对象
+ */
++ (void)requestWithMessage:(WBMessageObject *)message;
+@end
+
+/**
+ WBSendMessageToWeiboResponse
+ */
+@interface WBShareMessageToContactResponse : WBBaseResponse
+
+/**
+ 可能在分享过程中用户进行了授权操作，当此值不为空时，为用户相应授权信息
+ */
+@property (nonatomic,strong) WBAuthorizeResponse *authResponse;
+@end
 
 #pragma mark - MessageObject / ImageObject
 
@@ -481,6 +538,8 @@ extern NSString * const WeiboSDKGetAidFailNotification;
  */
 @property (nonatomic, strong) WBNewVideoObject *videoObject;
 /**
+ 
+ 
  返回一个 WBMessageObject 对象
  
  @return 返回一个*自动释放的*WBMessageObject对象
@@ -496,8 +555,8 @@ extern NSString * const WeiboSDKGetAidFailNotification;
 typedef NS_ENUM(NSInteger, WBSDKMediaTransferErrorCode)
 {
     WBSDKMediaTransferAlbumPermissionError              = 0,//相册权限
-    WBSDKMediaTransferAlbumWriteError               = 0,//相册写入错误
-    WBSDKMediaTransferAlbumAssetTypeError               = 0,//资源类型错误
+    WBSDKMediaTransferAlbumWriteError               = 1,//相册写入错误
+    WBSDKMediaTransferAlbumAssetTypeError               = 2,//资源类型错误
 };
 
 /**
@@ -523,7 +582,8 @@ typedef NS_ENUM(NSInteger, WBSDKMediaTransferErrorCode)
 @interface WBImageObject : NSObject
 
 /**
- 图片真实数据内容
+ 图片真实数据内容，图片数据与图片数组finalAssetArray只能存在一项，图片数据不能为空并且大小不能超过10M,
+ 网页分享使用图片数据
  
  @warning 大小不能超过10M
  */
@@ -532,7 +592,7 @@ typedef NS_ENUM(NSInteger, WBSDKMediaTransferErrorCode)
 /**
  是否分享到story
  */
-@property (nonatomic) BOOL isShareToStory;
+@property (nonatomic) BOOL isShareToStory DEPRECATED_MSG_ATTRIBUTE("shareToStory is deprecated");
 
 /**
  返回一个 WBImageObject 对象
@@ -555,14 +615,9 @@ typedef NS_ENUM(NSInteger, WBSDKMediaTransferErrorCode)
 @property(nonatomic,weak)id<WBMediaTransferProtocol> delegate;
 
 /**
- 图片对象添加图片数组
+ 图片对象添加图片数组  图片数据一共不能超过30MB
  */
 - (void)addImages:(NSArray<UIImage *>*)imageArray;
-
-/**
- 图片对象添加照片数组
- */
-- (void)addImageAssets:(NSArray<PHAsset*>*)assetArray;
 
 /**
  多图最终传递对象
@@ -583,7 +638,7 @@ typedef NS_ENUM(NSInteger, WBSDKMediaTransferErrorCode)
 /**
  是否分享到story
  */
-@property (nonatomic) BOOL isShareToStory;
+@property (nonatomic) BOOL isShareToStory DEPRECATED_MSG_ATTRIBUTE("shareToStory is deprecated");
 
 /**
  多图分享委托
@@ -591,14 +646,9 @@ typedef NS_ENUM(NSInteger, WBSDKMediaTransferErrorCode)
 @property(nonatomic,weak)id<WBMediaTransferProtocol> delegate;
 
 /**
- 视频对象添加视频
+ 视频对象添加视频  视频数据不能超过50MB
  */
 -(void)addVideo:(NSURL*)videoUrl;
-
-/**
- 视频对象添加视频资源
- */
--(void)addVideoAsset:(PHAsset*)videoAsset;
 
 /**
  视频最终传递对象
@@ -611,6 +661,7 @@ typedef NS_ENUM(NSInteger, WBSDKMediaTransferErrorCode)
 #pragma mark - Message Media Objects
 
 /**
+ 分享多媒体已经弃用 请不要用相关api
  消息中包含的多媒体数据对象基类,该类后期会被废弃,在发布器不再显示为linkcard样式,只显示为普通网络连接
  */
 @interface WBBaseMediaObject : NSObject
@@ -621,44 +672,45 @@ typedef NS_ENUM(NSInteger, WBSDKMediaTransferErrorCode)
  当第三方应用分享多媒体内容到微博时，应该将此参数设置为被分享的内容在自己的系统中的唯一标识
  @warning 不能为空，长度小于255
  */
-@property (nonatomic, strong) NSString *objectID;
+@property (nonatomic, strong) NSString * _Nullable objectID;
 
 /**
  多媒体内容标题
  @warning 不能为空且长度小于1k
  */
-@property (nonatomic, strong) NSString *title;
+@property (nonatomic, strong) NSString * _Nullable title;
 
 /**
  多媒体内容描述
  @warning 长度小于1k
  */
-@property (nonatomic, strong) NSString *description;
+@property (nonatomic, strong) NSString * _Nullable description;
 
 /**
  多媒体内容缩略图
  @warning 大小小于32k
  */
-@property (nonatomic, strong) NSData *thumbnailData;
+@property (nonatomic, strong) NSData * _Nullable thumbnailData;
 
 /**
  点击多媒体内容之后呼起第三方应用特定页面的scheme
  @warning 长度小于255
  */
-@property (nonatomic, strong) NSString *scheme;
+@property (nonatomic, strong) NSString * _Nullable scheme;
 
 /**
  返回一个 WBBaseMediaObject 对象
  
  @return 返回一个*自动释放的*WBBaseMediaObject对象
  */
-+ (id)object;
++ (id _Nullable )object DEPRECATED_MSG_ATTRIBUTE("WBBaseMediaObject is deprecated");
 
 @end
 
 #pragma mark - Message WebPage Objects
 
 /**
+ 分享多媒体已经弃用 请不要用相关api
  消息中包含的网页数据对象
  */
 @interface WBWebpageObject : WBBaseMediaObject
@@ -668,7 +720,7 @@ typedef NS_ENUM(NSInteger, WBSDKMediaTransferErrorCode)
  
  @warning 不能为空且长度不能超过255
  */
-@property (nonatomic, strong) NSString *webpageUrl;
+@property (nonatomic, strong) NSString * _Nullable webpageUrl DEPRECATED_MSG_ATTRIBUTE("webpageUrl is deprecated");
 
 @end
 

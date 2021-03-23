@@ -28,6 +28,7 @@
 
 BOOL gRegister = NO;
 
+
 @interface RCTWeiboAPI()<WeiboSDKDelegate>
 
 @end
@@ -92,8 +93,16 @@ RCT_EXPORT_METHOD(login:(NSDictionary *)config
     [self _autoRegisterAPI];
 
     WBAuthorizeRequest *request = [self _genAuthRequest:config];
-    BOOL success = [WeiboSDK sendRequest:request];
-    callback(@[success?[NSNull null]:INVOKE_FAILED]);
+    
+    void ( ^ completion )( BOOL );
+    completion = ^( BOOL success )
+    {
+        callback(@[success ? [NSNull null] : INVOKE_FAILED]);
+        return;
+    };
+    
+    [WeiboSDK sendRequest:request completion:completion];
+    //callback(@[success?[NSNull null]:INVOKE_FAILED]);
 }
 
 RCT_EXPORT_METHOD(logout)
@@ -204,7 +213,9 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
             if (schemes.count > 0)
             {
                 NSString *appId = [schemes[0] substringFromIndex:@"wb".length];
-                if ([WeiboSDK registerApp:appId]) {
+                NSString *universalLink = @"https://www.shehuiapp.com/app";
+                
+                if ([WeiboSDK registerApp:appId universalLink:universalLink]) {
                     gRegister = YES;
                 }
 #ifdef DEBUG
@@ -232,9 +243,9 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
         case WeiboSDKResponseStatusCodeUserCancelInstall:
             errMsg = @"用户取消安装微博客户端";
             break;
-        case WeiboSDKResponseStatusCodePayFail:
-            errMsg = @"支付失败";
-            break;
+//        case WeiboSDKResponseStatusCodePayFail:
+//            errMsg = @"支付失败";
+//            break;
         case WeiboSDKResponseStatusCodeShareInSDKFailed:
             errMsg = @"分享失败";
             break;
@@ -290,17 +301,17 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
     NSString *accessToken = aData[RCTWBShareAccessToken];
     WBSendMessageToWeiboRequest *request = [WBSendMessageToWeiboRequest requestWithMessage:message authInfo:authRequest access_token:accessToken];
     
-    BOOL success = [WeiboSDK sendRequest:request];
-    if (!success) {
-        NSMutableDictionary *body = [NSMutableDictionary new];
-        body[@"errMsg"] = INVOKE_FAILED;
-        body[@"errCode"] = @(-1);
-        body[@"type"] = @"WBSendMessageToWeiboResponse";
-
-        if (hasListeners) {
-            [self sendEventWithName:RCTWBEventName body:body];
-        }
-    }
+//    BOOL success = [WeiboSDK sendRequest:request];
+//    if (!success) {
+//        NSMutableDictionary *body = [NSMutableDictionary new];
+//        body[@"errMsg"] = INVOKE_FAILED;
+//        body[@"errCode"] = @(-1);
+//        body[@"type"] = @"WBSendMessageToWeiboResponse";
+//
+//        if (hasListeners) {
+//            [self sendEventWithName:RCTWBEventName body:body];
+//        }
+//    }
 }
 
 - (WBAuthorizeRequest *)_genAuthRequest:(NSDictionary *)config

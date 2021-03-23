@@ -1,6 +1,6 @@
 {
   "name": "rn-weibo-go",
-  "version": "3.0.6",
+  "version": "3.0.8",
   "description": "新浪微博登录和分享模块",
   "main": "index.js",
   "scripts": {
