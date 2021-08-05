@@ -23,5 +23,5 @@ android {
 
 dependencies {
     implementation 'com.facebook.react:react-native:+'
-    implementation files('libs/core-4.3.1-openDefaultRelease.aar')
+		implementation files('libs/core-4.4.3-openDefaultRelease.aar')
 }
