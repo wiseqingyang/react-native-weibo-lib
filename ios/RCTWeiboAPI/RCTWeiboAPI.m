@@ -17,6 +17,7 @@
 #define RCTWBShareTypeImage @"image"
 #define RCTWBShareTypeText @"text"
 #define RCTWBShareTypeVideo @"video"
+#define RCTWBShareTypeWebpage @"webpage"
 
 #define RCTWBShareType @"type"
 #define RCTWBShareText @"text"
@@ -29,18 +30,22 @@
 BOOL gRegister = NO;
 
 
+
 @interface RCTWeiboAPI()<WeiboSDKDelegate>
 
 @end
 
 @implementation RCTWeiboAPI
 
+
+
 {
-  bool hasListeners;
+    bool hasListeners;
+    RCTResponseSenderBlock cb;
 }
 
 
-@synthesize bridge = _bridge;
+//@synthesize bridge = _bridge;
 
 +(BOOL)requiresMainQueueSetup {
     return YES;
@@ -116,12 +121,18 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
     [self _autoRegisterAPI];
 
     NSString *imageUrl = aData[RCTWBShareImageUrl];
-    if (imageUrl.length && _bridge.imageLoader) {
+    if (imageUrl.length && [self.bridge moduleForClass:[RCTImageLoader class]]) {
         CGSize size = CGSizeZero;
         if (![aData[RCTWBShareType] isEqualToString:RCTWBShareTypeImage]) {
             size = CGSizeMake(80,80);
         }
-        [_bridge.imageLoader loadImageWithURLRequest:[RCTConvert NSURLRequest:imageUrl] size:size scale:1 clipped:FALSE resizeMode:UIViewContentModeScaleToFill progressBlock:nil partialLoadBlock: nil completionBlock:^(NSError *error, UIImage *image) {
+        [[self.bridge moduleForClass:[RCTImageLoader class]] loadImageWithURLRequest:[RCTConvert NSURLRequest:imageUrl]
+                                                                                size:size
+                                                                               scale:1 clipped:FALSE
+                                                                          resizeMode:RCTResizeModeStretch
+                                                                       progressBlock:^(int64_t progress, int64_t total){}
+                                                                    partialLoadBlock: ^(UIImage *image){}
+                                                                     completionBlock:^(NSError *error, UIImage *image) {
             [self _shareWithData:aData image:image];
         }];
     }
@@ -271,8 +282,12 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
     else if ([type isEqualToString:RCTWBShareTypeImage]) {
         //        大小不能超过10M
         WBImageObject *imageObject = [WBImageObject new];
+        
+        NSMutableArray *imageArray = [NSMutableArray array];
+        
         if (aImage) {
-            imageObject.imageData = UIImageJPEGRepresentation(aImage, 0.7);
+            [imageArray addObject:aImage];
+            [imageObject addImages:imageArray];
         }
         message.imageObject = imageObject;
     }
@@ -283,7 +298,7 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
             [videoObject addVideo:videoUrl];
             message.videoObject = videoObject;
         }
-        else {
+        else if([type isEqualToString:RCTWBShareTypeWebpage] ) {
             WBWebpageObject *webpageObject = [WBWebpageObject new];
             webpageObject.webpageUrl = aData[RCTWBShareWebpageUrl];
             message.mediaObject = webpageObject;
@@ -301,17 +316,21 @@ RCT_EXPORT_METHOD(shareToWeibo:(NSDictionary *)aData
     NSString *accessToken = aData[RCTWBShareAccessToken];
     WBSendMessageToWeiboRequest *request = [WBSendMessageToWeiboRequest requestWithMessage:message authInfo:authRequest access_token:accessToken];
     
-//    BOOL success = [WeiboSDK sendRequest:request];
-//    if (!success) {
-//        NSMutableDictionary *body = [NSMutableDictionary new];
-//        body[@"errMsg"] = INVOKE_FAILED;
-//        body[@"errCode"] = @(-1);
-//        body[@"type"] = @"WBSendMessageToWeiboResponse";
-//
-//        if (hasListeners) {
-//            [self sendEventWithName:RCTWBEventName body:body];
-//        }
-//    }
+    dispatch_async(dispatch_get_main_queue(), ^{
+        // 在这里编写需要在主线程中运行的代码
+        [WeiboSDK sendRequest:request completion:^(BOOL success) {
+            if (!success) {
+                NSMutableDictionary *body = [NSMutableDictionary new];
+                body[@"errMsg"] = INVOKE_FAILED;
+                body[@"errCode"] = @(-1);
+                body[@"type"] = @"WBSendMessageToWeiboResponse";
+
+                if (self->hasListeners) {
+                    [self sendEventWithName:RCTWBEventName body:body];
+                }
+            }
+        }];
+    });
 }
 
 - (WBAuthorizeRequest *)_genAuthRequest:(NSDictionary *)config

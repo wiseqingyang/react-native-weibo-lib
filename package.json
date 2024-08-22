@@ -1,6 +1,6 @@
 {
-  "name": "rn-weibo-go",
-  "version": "3.0.9",
+  "name": "react-native-weibo-lib",
+  "version": "3.1.0",
   "description": "新浪微博登录和分享模块",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yuanshan/react-native-weibo.git"
+    "url": "git+https://github.com/wiseqingyang/react-native-weibo-lib.git"
   },
   "keywords": [
     "react-native",
@@ -19,12 +19,11 @@
     "share",
     "login"
   ],
-  "author": "yuanshan",
+  "author": "wiseqingyang",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/yuanshan/react-native-weiboissues"
+    "url": "https://github.com/wiseqingyang/react-native-weibo-lib#issues"
   },
-  "homepage": "https://github.com/yuanshan/react-native-weibo#readme",
-  "dependencies": {
-  }
+  "homepage": "https://github.com/wiseqingyang/react-native-weibo-lib#readme",
+  "dependencies": {}
 }

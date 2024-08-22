@@ -1,4 +1,4 @@
-# rn-weibo
+# react-native-weibo-lib
 React Native的新浪微博登录分享插件
 
 本仓库fork自[reactnativecn/react-native-weibo](https://github.com/reactnativecn/react-native-weibo)，但源仓库许久没维护了，故本人针对react-native和weiboSDK新版做了适配后npm发布了新包`rn-weibo`。
@@ -13,20 +13,18 @@ React Native的新浪微博登录分享插件
 ### 1.首先安装npm包
 
 ```bash
-npm install rn-weibo --save
+npm install react-native-weibo-lib --save
 ```
 
 ### 2.link
 #### 自动link方法
 
-```bash
-react-native link
-```
+0.59版本以后，不需要做任何事情
 
 #### 手动link~（如果不能够自动link）
 #####ios
 a.打开XCode's工程中, 右键点击Libraries文件夹 ➜ Add Files to <...>
-b.去node_modules ➜ react-native-weibo ➜ ios ➜ 选择 RCTWeiboAPI.xcodeproj
+b.去node_modules ➜ react-native-weibo-lib ➜ ios ➜ 选择 RCTWeiboAPI.xcodeproj
 c.在工程Build Phases ➜ Link Binary With Libraries中添加libRCTWeiboAPI.a
 
 #####Android
@@ -35,8 +33,8 @@ c.在工程Build Phases ➜ Link Binary With Libraries中添加libRCTWeiboAPI.a
 // file: android/settings.gradle
 ...
 
-include ':react-native-weibo'
-project(':react-native-weibo').projectDir = new File(settingsDir, '../node_modules/react-native-weibo/android')
+include ':react-native-weibo-lib'
+project(':react-native-weibo-lib').projectDir = new File(settingsDir, '../node_modules/react-native-weibo-lib/android')
 ```
 
 ```
@@ -45,7 +43,7 @@ project(':react-native-weibo').projectDir = new File(settingsDir, '../node_modul
 
 dependencies {
     ...
-    compile project(':react-native-weibo')
+    compile project(':react-native-weibo-lib')
 }
 ```
 
@@ -81,7 +79,7 @@ public class MainApplication extends Application implements ReactApplication {
 
 ### 3.工程配置
 #### ios配置
-将`node_modules/react-native-weibo/ios/libWeiboSDK/WeiboSDK.bundle`加入到工程中(必须，很重要，不然登录的时候会crash)
+将`node_modules/react-native-weibo-lib/ios/libWeiboSDK/WeiboSDK.bundle`加入到工程中(必须，很重要，不然登录的时候会crash)
 
 在工程target的`Build Phases->Link Binary with Libraries`中加入`libRCTWeiboAPI.a、libsqlite3.tbd、libz.tbd、ImageIO.framework、SystemConfiguration.framework、Security.framework、CoreTelephony.framework、CoreText.framework`
 
@@ -153,7 +151,7 @@ public void onActivityResult(int requestCode, int resultCode, Intent data){
 ### 引入包
 
 ```
-import * as WeiboAPI from 'react-native-weibo';
+import * as WeiboAPI from 'react-native-weibo-lib';
 ```
 
 ### API
