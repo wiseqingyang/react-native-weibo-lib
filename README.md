@@ -127,13 +127,23 @@ public class MainApplication extends Application implements ReactApplication {
 
 #### Android
 
-在`android/app/build.gradle`里，defaultConfig栏目下添加如下代码：
+将`node_modules/react-native-weibo-lib/android/libs/core-4.4.3-openDefaultRelease.aar`文件拷贝到你的工程目录下的libs文件夹中
+
+在`android/app/build.gradle`文件添加如下代码：
 
 ```
-manifestPlaceholders = [
-    WB_APPID: "微博的APPID"		//在此修改微博APPID
-]
+dependencies {
+    implementation(name:'core-4.4.3-openDefaultRelease', ext:'aar')
+		//....
+}
+defaultConfig {
+		manifestPlaceholders = [
+			WB_APPID: "微博的APPID"		//在此修改微博APPID
+		]
+		//....
+}
 ```
+
 
 如果react-native版本<0.18.0,确保你的MainActivity.java中有`onActivityResult`的实现：
 

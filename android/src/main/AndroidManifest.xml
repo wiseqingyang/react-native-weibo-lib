@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="cn.reactnative.modules.weibo">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -14,6 +15,10 @@
             android:configChanges="keyboardHidden|orientation"
             android:windowSoftInputMode="adjustResize"
             android:exported="false" >
+        </activity>
+        <activity
+            android:name="com.sina.weibo.sdk.share.WbShareResultActivity"
+            android:exported="false">
         </activity>
         <service android:name="com.sina.weibo.sdk.net.DownloadService"
             android:exported="false">
